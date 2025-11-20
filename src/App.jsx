@@ -30,7 +30,7 @@ function App() {
     setScreen('loading'); // Show loading screen
     
     try {
-      const response = await fetch(import.meta.env.VITE_EAZY_TERP_WEBHOOK_URL, {
+      const response = await fetch('https://n8n.eazyterp.com/webhook/terpene-mood-intake', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mood: selectedMood, moodType: moodType }),
