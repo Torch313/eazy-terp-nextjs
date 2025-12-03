@@ -38,6 +38,7 @@ function App() {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('API Response:', data); // Debug log
         setResults(data);
         setScreen('results');
       }
@@ -533,17 +534,17 @@ function App() {
                 </div>
               )}
 
-              {results.effects && (
+              {results.primaryEffects && (
                 <div style={styles.section}>
                   <h3 style={styles.sectionTitle}>✨ Special Effects</h3>
-                  <p style={styles.sectionText}>{results.effects}</p>
+                  <p style={styles.sectionText}>{results.primaryEffects}</p>
                 </div>
               )}
 
-              {results.additionalInfo && (
+              {results.vibeEnhancers && (
                 <div style={styles.section}>
                   <h3 style={styles.sectionTitle}>💫 Vibe Enhancers</h3>
-                  <p style={styles.sectionText}>{results.additionalInfo}</p>
+                  <p style={styles.sectionText}>{results.vibeEnhancers}</p>
                 </div>
               )}
 
@@ -576,9 +577,16 @@ function App() {
 
               <button
                 onClick={() => {
-                  if (results.strains) {
-                    const strains = results.strains.split(',').map(s => s.trim()).slice(0, 3).join(' OR ');
-                    const query = `${strains} dispensary near me`;
+                  if (results.recommendedStrains) {
+                    let strains = [];
+                    
+                    if (Array.isArray(results.recommendedStrains)) {
+                      strains = results.recommendedStrains.slice(0, 3);
+                    } else if (typeof results.recommendedStrains === 'string') {
+                      strains = results.recommendedStrains.split(',').map(s => s.trim()).slice(0, 3);
+                    }
+                    
+                    const query = `${strains.join(' OR ')} dispensary near me`;
                     window.open(`https://www.google.com/maps/search/${encodeURIComponent(query)}`, '_blank');
                   }
                 }}
@@ -630,7 +638,7 @@ function App() {
                 </div>
               )}
 
-              {results.strains && (
+              {results.recommendedStrains && (
                 <div style={styles.budtenderSection}>
                   <p style={{ ...styles.budtenderLabel, marginBottom: '0.75rem' }}>Recommended Strains</p>
                   <div style={{ 
@@ -639,16 +647,16 @@ function App() {
                     lineHeight: '2'
                   }}>
                     {(() => {
-                      console.log('Raw strains data:', results.strains);
+                      console.log('Raw strains data:', results.recommendedStrains);
                       
                       // Handle different formats
                       let strainList = [];
                       
-                      if (Array.isArray(results.strains)) {
-                        strainList = results.strains;
-                      } else if (typeof results.strains === 'string') {
+                      if (Array.isArray(results.recommendedStrains)) {
+                        strainList = results.recommendedStrains;
+                      } else if (typeof results.recommendedStrains === 'string') {
                         // Split by various delimiters
-                        strainList = results.strains
+                        strainList = results.recommendedStrains
                           .split(/[\n,\r]+/)
                           .map(s => s.trim())
                           .filter(s => s && s.length > 2 && !s.includes('similar'));
