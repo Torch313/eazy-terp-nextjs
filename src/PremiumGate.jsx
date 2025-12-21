@@ -9,11 +9,7 @@ export default function PremiumGate({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (email) checkPremium(email);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+     
   async function checkPremium(rawEmail) {
     setError("");
     setLoading(true);
