@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const API_URL = "https://n8n.eazyterp.com/webhook/webhook/check-premium";
 const GUMROAD_URL = "https://torrey54.gumroad.com/l/fiztp";
@@ -101,7 +101,6 @@ export default function PremiumGate({ children }) {
       left: "50%",
       top: "50%",
       transform: "translate(-50%, -50%)",
-
       width: "600px",
       opacity: 0.08,
       filter: "saturate(1.2) contrast(1.1) drop-shadow(0 30px 40px rgba(0,0,0,0.4))",
@@ -113,14 +112,11 @@ export default function PremiumGate({ children }) {
     title: {
       fontSize: "4.5rem",
       fontWeight: "900",
-      background: "linear-gradient(135deg, #fde047 0%, #facc15 50%, #fbbf24 100%)",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
+      color: "#fbbf24",
       fontFamily: "Impact, system-ui, sans-serif",
       letterSpacing: "0.02em",
       margin: 0,
-      filter: "drop-shadow(0 4px 12px rgba(250, 204, 21, 0.4))",
+      textShadow: "0 4px 16px rgba(251, 191, 36, 0.6), 0 2px 8px rgba(251, 191, 36, 0.4)",
     },
     badge: {
       display: "inline-flex",
@@ -128,13 +124,13 @@ export default function PremiumGate({ children }) {
       gap: "0.5rem",
       padding: "0.7rem 1.4rem",
       borderRadius: "999px",
-      background: "linear-gradient(135deg, rgba(250, 204, 21, 0.25), rgba(251, 191, 36, 0.18))",
-      border: "2px solid rgba(250, 204, 21, 0.50)",
-      color: "#fde047",
+      background: "rgba(251, 191, 36, 0.15)",
+      border: "2px solid #fbbf24",
+      color: "#fbbf24",
       fontWeight: 800,
       marginTop: "1rem",
       fontSize: "1.1rem",
-      boxShadow: "0 6px 16px rgba(250, 204, 21, 0.20)",
+      boxShadow: "0 6px 16px rgba(251, 191, 36, 0.20)",
     },
 
     mascotSection: {
@@ -156,12 +152,12 @@ export default function PremiumGate({ children }) {
       flexShrink: 0,
     },
     quote: {
-      color: "#fde047",
+      color: "#fbbf24",
       fontWeight: 900,
       fontSize: "1.35rem",
       marginBottom: "0.5rem",
       fontStyle: "italic",
-      textShadow: "0 2px 8px rgba(250, 204, 21, 0.3)",
+      textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
     },
     quoteSubtext: {
       color: "rgba(255, 255, 255, 0.94)",
@@ -171,13 +167,13 @@ export default function PremiumGate({ children }) {
 
     sectionTitle: {
       marginTop: "2.25rem",
-      color: "#fde047",
+      color: "#fbbf24",
       fontWeight: 900,
       fontSize: "1.5rem",
       letterSpacing: "0.01em",
       position: "relative",
       zIndex: 2,
-      textShadow: "0 2px 8px rgba(250, 204, 21, 0.25)",
+      textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
     },
     sectionSub: {
       marginTop: "0.5rem",
@@ -228,10 +224,9 @@ export default function PremiumGate({ children }) {
       display: "inline-block",
       padding: "1.25rem 1.5rem",
       borderRadius: "1rem",
-      background:
-        "linear-gradient(135deg, rgba(250,204,21,0.28) 0%, rgba(251,191,36,0.20) 50%, rgba(245,158,11,0.15) 100%)",
-      border: "2px solid rgba(250,204,21,0.50)",
-      boxShadow: "0 12px 28px rgba(0,0,0,0.4), 0 0 20px rgba(250,204,21,0.15)",
+      background: "rgba(251, 191, 36, 0.15)",
+      border: "2px solid #fbbf24",
+      boxShadow: "0 12px 28px rgba(0,0,0,0.4), 0 0 20px rgba(251, 191, 36, 0.15)",
       color: "rgba(255,255,255,0.95)",
     },
     budHeader: {
@@ -244,18 +239,18 @@ export default function PremiumGate({ children }) {
     budTitle: { 
       fontWeight: 900, 
       fontSize: "1.1rem",
-      color: "#fde047",
-      textShadow: "0 2px 6px rgba(250, 204, 21, 0.3)",
+      color: "#fbbf24",
+      textShadow: "0 2px 6px rgba(251, 191, 36, 0.4)",
     },
     budPill: {
       fontSize: "0.8rem",
       fontWeight: 900,
       padding: "0.35rem 0.75rem",
       borderRadius: "999px",
-      background: "rgba(250,204,21,0.25)",
-      border: "1px solid rgba(250,204,21,0.45)",
-      color: "#fde047",
-      boxShadow: "0 2px 6px rgba(250,204,21,0.15)",
+      background: "rgba(251, 191, 36, 0.20)",
+      border: "1px solid #fbbf24",
+      color: "#fbbf24",
+      boxShadow: "0 2px 6px rgba(251, 191, 36, 0.15)",
     },
     budRow: { 
       display: "flex", 
@@ -277,12 +272,12 @@ export default function PremiumGate({ children }) {
       marginTop: "2.5rem",
       textAlign: "center",
       padding: "2.25rem",
-      background: "rgba(250, 204, 21, 0.10)",
+      background: "rgba(251, 191, 36, 0.08)",
       borderRadius: "1.25rem",
-      border: "2px solid rgba(250, 204, 21, 0.35)",
+      border: "2px solid rgba(251, 191, 36, 0.35)",
       position: "relative",
       zIndex: 2,
-      boxShadow: "0 8px 24px rgba(250, 204, 21, 0.12)",
+      boxShadow: "0 8px 24px rgba(251, 191, 36, 0.12)",
     },
     priceRow: {
       display: "flex",
@@ -294,11 +289,8 @@ export default function PremiumGate({ children }) {
     price: {
       fontSize: "3.75rem",
       fontWeight: 900,
-      background: "linear-gradient(135deg, #fde047 0%, #facc15 100%)",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-      filter: "drop-shadow(0 4px 12px rgba(250, 204, 21, 0.35))",
+      color: "#fbbf24",
+      textShadow: "0 4px 16px rgba(251, 191, 36, 0.6)",
     },
     priceDetail: { 
       color: "rgba(255, 255, 255, 0.90)", 
@@ -331,7 +323,7 @@ export default function PremiumGate({ children }) {
       marginTop: "2.5rem",
       marginBottom: "2rem",
       height: "2px",
-      background: "linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.35), transparent)",
+      background: "linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.35), transparent)",
       position: "relative",
       zIndex: 2,
     },
@@ -345,13 +337,13 @@ export default function PremiumGate({ children }) {
       zIndex: 2,
     },
     unlockTitle: {
-      color: "#fde047",
+      color: "#fbbf24",
       fontWeight: 900,
       fontSize: "1.65rem",
       margin: 0,
       marginBottom: "1.25rem",
       textAlign: "center",
-      textShadow: "0 2px 8px rgba(250, 204, 21, 0.3)",
+      textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
     },
 
     inputRow: { display: "flex", gap: "0.85rem", flexWrap: "wrap" },
@@ -359,7 +351,7 @@ export default function PremiumGate({ children }) {
       flex: "1 1 260px",
       padding: "1.1rem 1.4rem",
       borderRadius: "1rem",
-      border: "2px solid rgba(250, 204, 21, 0.35)",
+      border: "2px solid rgba(251, 191, 36, 0.35)",
       background: "rgba(255, 255, 255, 0.96)",
       color: "#111827",
       fontSize: "1.08rem",
@@ -370,15 +362,15 @@ export default function PremiumGate({ children }) {
     unlockButton: {
       padding: "1.1rem 2.25rem",
       borderRadius: "1rem",
-      border: "2px solid rgba(250, 204, 21, 0.50)",
-      background: "rgba(250, 204, 21, 0.22)",
-      color: "#fde047",
+      border: "2px solid #fbbf24",
+      background: "rgba(251, 191, 36, 0.20)",
+      color: "#fbbf24",
       fontSize: "1.15rem",
       fontWeight: 900,
       cursor: "pointer",
       minWidth: "150px",
       transition: "all 0.2s ease",
-      boxShadow: "0 6px 16px rgba(250, 204, 21, 0.20)",
+      boxShadow: "0 6px 16px rgba(251, 191, 36, 0.20)",
     },
 
     error: {
@@ -397,7 +389,7 @@ export default function PremiumGate({ children }) {
       padding: "1.4rem",
       borderRadius: "1rem",
       background: "rgba(255, 255, 255, 0.09)",
-      border: "2px solid rgba(250, 204, 21, 0.30)",
+      border: "2px solid rgba(251, 191, 36, 0.30)",
       color: "rgba(255, 255, 255, 0.96)",
       fontSize: "1.05rem",
       lineHeight: 1.75,
@@ -406,11 +398,11 @@ export default function PremiumGate({ children }) {
       marginTop: "1.15rem",
       padding: "1.1rem",
       borderRadius: "0.85rem",
-      background: "rgba(250, 204, 21, 0.18)",
+      background: "rgba(251, 191, 36, 0.18)",
       fontWeight: 900,
       fontSize: "1.1rem",
       textAlign: "center",
-      color: "#fde047",
+      color: "#fbbf24",
     },
     resetButton: {
       marginTop: "1.15rem",
@@ -481,13 +473,13 @@ export default function PremiumGate({ children }) {
           filter: brightness(1.10) !important;
         }
         input:focus {
-          border-color: rgba(250, 204, 21, 0.75) !important;
-          box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.20) !important;
+          border-color: #fbbf24 !important;
+          box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.20) !important;
         }
         .feature-item:hover {
           background: rgba(255, 255, 255, 0.14) !important;
           transform: translateX(10px);
-          border-color: rgba(250, 204, 21, 0.25) !important;
+          border-color: rgba(251, 191, 36, 0.25) !important;
         }
       `}</style>
 
@@ -555,9 +547,9 @@ export default function PremiumGate({ children }) {
               style={{
                 fontSize: "1.75rem",
                 fontWeight: 900,
-                color: "#fde047",
+                color: "#fbbf24",
                 marginBottom: "0.75rem",
-                textShadow: "0 2px 8px rgba(250, 204, 21, 0.3)",
+                textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
               }}
             >
               Built to Make Cannabis Simpler
@@ -641,11 +633,11 @@ export default function PremiumGate({ children }) {
                 onClick={() => checkPremium(email)}
                 disabled={loading}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(250, 204, 21, 0.30)";
+                  e.currentTarget.style.background = "rgba(251, 191, 36, 0.30)";
                   e.currentTarget.style.transform = "translateY(-2px)";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(250, 204, 21, 0.22)";
+                  e.currentTarget.style.background = "rgba(251, 191, 36, 0.20)";
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
