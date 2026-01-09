@@ -399,24 +399,30 @@ export default function MainApp() {
               </h2>
 
               <select
-                value={selectedMood}
-                onChange={(e) => setSelectedMood(e.target.value)}
-                style={styles.select}
-              >
-                <option value="">Select a mood...</option>
-                {moodOptions.map((mood) => (
-                  <option key={mood} value={mood}>{mood}</option>
-                ))}
-              </select>
+              value={selectedMood}
+              onChange={(e) => {
+                setSelectedMood(e.target.value);
+              }}
+              onBlur={(e) => {
+                setSelectedMood(e.target.value);
+              }}
+              style={styles.select}
+            >
+              <option value="">Select a mood...</option>
+              {moodOptions.map((mood) => (
+                <option key={mood} value={mood}>{mood}</option>
+              ))}
+            </select>
 
               <button
                 onClick={handleMoodSubmit}
                 disabled={!selectedMood || loading}
                 style={{
-                  ...styles.buttonYellow,
-                  opacity: (!selectedMood || loading) ? 0.6 : 1,
-                  cursor: (!selectedMood || loading) ? 'not-allowed' : 'pointer'
-                }}
+  ...styles.buttonYellow,
+  opacity: (!selectedMood || loading) ? 0.6 : 1,
+  cursor: (!selectedMood || loading) ? 'not-allowed' : 'pointer',
+  display: 'block'
+}}
               >
                 {loading ? 'Finding your match...' : 'Get My Recommendation'}
               </button>
