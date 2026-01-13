@@ -132,10 +132,10 @@ export default function PremiumGate({ children }) {
       fontSize: "1.1rem",
       boxShadow: "0 6px 16px rgba(251, 191, 36, 0.20)",
     },
-
-    mascotSection: {
+mascotSection: {
   display: "flex",
   alignItems: "center",
+  justifyContent: "center",
   gap: "1.5rem",
   marginTop: "2rem",
   padding: "1.75rem",
