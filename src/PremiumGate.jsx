@@ -350,8 +350,8 @@ mascotSection: {
 
     inputRow: { 
   display: "flex", 
-  gap: "0.85rem", 
-  flexWrap: "wra p",
+  flexDirection: "column",
+  gap: "0.85rem",
   width: "100%"
 },
    input: {
