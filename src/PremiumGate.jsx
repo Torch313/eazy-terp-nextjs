@@ -134,17 +134,18 @@ export default function PremiumGate({ children }) {
     },
 
     mascotSection: {
-      display: "flex",
-      alignItems: "center",
-      gap: "1.5rem",
-      marginTop: "2rem",
-      padding: "1.75rem",
-      background: "rgba(255, 255, 255, 0.08)",
-      borderRadius: "1.25rem",
-      border: "1px solid rgba(255, 255, 255, 0.16)",
-      position: "relative",
-      zIndex: 2,
-    },
+  display: "flex",
+  alignItems: "center",
+  gap: "1.5rem",
+  marginTop: "2rem",
+  padding: "1.75rem",
+  background: "rgba(255, 255, 255, 0.08)",
+  borderRadius: "1.25rem",
+  border: "1px solid rgba(255, 255, 255, 0.16)",
+  position: "relative",
+  zIndex: 2,
+  flexWrap: "wrap",
+},
     mascot: {
       width: "120px",
       height: "auto",
@@ -160,11 +161,12 @@ export default function PremiumGate({ children }) {
       textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
     },
     quoteSubtext: {
-      color: "rgba(255, 255, 255, 0.94)",
-      fontSize: "1.05rem",
-      lineHeight: 1.65,
-    },
-
+  color: "rgba(255, 255, 255, 0.94)",
+  fontSize: "1rem",
+  lineHeight: 1.65,
+  wordWrap: "break-word",
+  overflowWrap: "break-word",
+},
     sectionTitle: {
       marginTop: "2.25rem",
       color: "#fbbf24",
@@ -501,7 +503,7 @@ export default function PremiumGate({ children }) {
 
           <div style={styles.mascotSection}>
             <img src="/eazy-terp-peace.png" alt="Eazy Terp" style={styles.mascot} />
-            <div>
+            <div style={styles.quoteBlock}>
               <div style={styles.quote}>"Keep it smooth, keep it jazzy." 🌿</div>
               <div style={styles.quoteSubtext}>
                 Your daily companion for matching moods to terpenes — clean guidance,
