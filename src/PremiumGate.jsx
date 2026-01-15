@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const API_URL = "https://n8n.eazyterp.com/webhook/webhook/check-premium";
-const GUMROAD_URL = "https://torrey54.gumroad.com/l/fiztp";
+const STRIPE_URL = "https://buy.stripe.com/cNibJ39h64Xv4a5Fix8EM00";
 
 export default function PremiumGate({ children }) {
   const [email, setEmail] = useState(() => localStorage.getItem("et_email") || "");
@@ -601,13 +601,12 @@ mascotSection: {
             </div>
 
             <div style={{ color: "rgba(255, 255, 255, 0.87)", marginBottom: "0.65rem", fontSize: "1.05rem" }}>
-              Cancel anytime • Instant access • Secure via Gumroad
+              "Stripe" • Cancel anytime
             </div>
 
             <button
               style={styles.buyButton}
-              onClick={() => window.open(GUMROAD_URL, "_blank")}
-              onMouseEnter={(e) => {
+              onClick={() => window.open(STRIPE_URL, "_blank")}              onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
                 e.currentTarget.style.boxShadow = 
                   "0 0 50px rgba(251, 191, 36, 0.65), 0 15px 55px rgba(0, 0, 0, 0.50)";
