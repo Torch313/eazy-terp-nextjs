@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const API_URL = "https://n8n.eazyterp.com/webhook/webhook/check-premium";
-const STRIPE_URL = "https://buy.stripe.com/cNibJ39h64Xv4a5Fix8EM00";
+const STRIPE_URL = "https://buy.stripe.com/cNibJ39h64Xv4a5flx8EM00";
 
 export default function PremiumGate({ children }) {
   const [email, setEmail] = useState(() => localStorage.getItem("et_email") || "");
