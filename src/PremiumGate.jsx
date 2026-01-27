@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 // ============================================================================
 // API ENDPOINTS
 // ============================================================================
-const API_VALIDATE_TOKEN = "https://n8n.eazyterp.com/webhook/ee138a4f-f14a-452c-88b3-352753c40725";
-const API_CLAIM_DEVICE = "https://n8n.eazyterp.com/webhook/claim-device";
+const API_VALIDATE_TOKEN = "/api/validate-token";
+const API_CLAIM_DEVICE = "/api/claim-device";
+
 const STRIPE_URL = "https://buy.stripe.com/cNibJ39h64Xv4a5flx8EM00";
 
 // ============================================================================
