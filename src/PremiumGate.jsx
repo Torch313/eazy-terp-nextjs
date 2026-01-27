@@ -1,60 +1,234 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const API_URL = "https://n8n.eazyterp.com/webhook/webhook/check-premium";
+// ============================================================================
+// API ENDPOINTS
+// ============================================================================
+const API_VALIDATE_TOKEN = "https://n8n.eazyterp.com/webhook/ee138a4f-f14a-452c-88b3-352753c40725";
+const API_CLAIM_DEVICE = "https://n8n.eazyterp.com/webhook/claim-device";
 const STRIPE_URL = "https://buy.stripe.com/cNibJ39h64Xv4a5flx8EM00";
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Generate or retrieve device ID from localStorage
+ * This ID uniquely identifies this device/browser
+ */
+function getDeviceId() {
+  let deviceId = localStorage.getItem("et_device_id");
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    localStorage.setItem("et_device_id", deviceId);
+  }
+  return deviceId;
+}
+
+/**
+ * Get stored token from localStorage
+ */
+function getStoredToken() {
+  return localStorage.getItem("et_token");
+}
+
+/**
+ * Save token to localStorage
+ */
+function saveToken(token) {
+  localStorage.setItem("et_token", token);
+}
+
+/**
+ * Clear all authentication data
+ */
+function clearAuth() {
+  localStorage.removeItem("et_token");
+  localStorage.removeItem("et_email");
+  // Note: We keep et_device_id - it identifies the hardware
+}
+
+// ============================================================================
+// MAIN COMPONENT
+// ============================================================================
 
 export default function PremiumGate({ children }) {
   const [email, setEmail] = useState(() => localStorage.getItem("et_email") || "");
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [isPremium, setIsPremium] = useState(false);
+  const [bootLoading, setBootLoading] = useState(true); // Only for initial load/auto-unlock
+  const [actionLoading, setActionLoading] = useState(false); // Only for button clicks
   const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
 
-     
-  async function checkPremium(rawEmail) {
+  // ============================================================================
+  // VALIDATE TOKEN (for returning users)
+  // ============================================================================
+  async function validateToken(token, deviceId) {
+    try {
+      const res = await fetch(API_VALIDATE_TOKEN, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, device_id: deviceId }),
+      });
+
+      if (!res.ok) throw new Error(`Validation failed (${res.status})`);
+
+      const data = await res.json();
+
+      if (data.isPremium === true) {
+        // Token is valid - unlock the app
+        setIsPremium(true);
+        if (data.email) {
+          localStorage.setItem("et_email", data.email);
+        }
+      } else {
+        // Token invalid - clear and show paywall
+        clearAuth();
+        setIsPremium(false);
+      }
+    } catch (err) {
+      // Validation error - clear and show paywall
+      console.error("Token validation error:", err);
+      clearAuth();
+      setIsPremium(false);
+    } finally {
+      setBootLoading(false);
+    }
+  }
+
+  // ============================================================================
+  // CLAIM DEVICE BY SESSION (auto-unlock after Stripe purchase)
+  // ============================================================================
+  async function claimDeviceBySession(sessionId) {
     setError("");
-    setLoading(true);
+    setResult(null);
+
+    try {
+      const cleanSession = String(sessionId || "").trim();
+      if (!cleanSession) throw new Error("Missing session_id from Stripe redirect.");
+
+      const deviceId = getDeviceId();
+
+      const res = await fetch(API_CLAIM_DEVICE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: cleanSession, device_id: deviceId }),
+      });
+
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
+
+      const data = await res.json();
+
+      if (data.isPremium === true && data.token) {
+        saveToken(data.token);
+        if (data.email) localStorage.setItem("et_email", data.email);
+
+        // IMPORTANT: Remove session_id from URL so refresh doesn't re-claim
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        setIsPremium(true);
+      } else {
+        throw new Error(data.message || "Purchase found but could not unlock. Try Restore Access.");
+      }
+    } catch (e) {
+      setError(e?.message || "Auto-unlock failed. Try Restore Access below.");
+    } finally {
+      setBootLoading(false);
+    }
+  }
+
+  // ============================================================================
+  // CLAIM DEVICE (for email recovery / new device)
+  // ============================================================================
+  async function claimDevice(rawEmail) {
+    setError("");
+    setActionLoading(true);
+    setResult(null);
 
     try {
       const cleanEmail = String(rawEmail || "").trim().toLowerCase();
       if (!cleanEmail) throw new Error("Enter the email you used at checkout.");
 
-      const res = await fetch(API_URL, {
+      const deviceId = getDeviceId();
+
+      const res = await fetch(API_CLAIM_DEVICE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: cleanEmail }),
+        body: JSON.stringify({ 
+          email: cleanEmail,
+          device_id: deviceId 
+        }),
       });
 
-      if (!res.ok) throw new Error(`Server error (${res.status}).`);
+      if (!res.ok) throw new Error(`Server error (${res.status})`);
 
       const data = await res.json();
 
-      const cleaned = {
-        ...data,
-        email: String(data.email || cleanEmail).trim(),
-        plan: String(data.plan || "").trim(),
-        status: String(data.status || "").trim(),
-        isPremium: Boolean(data.isPremium),
-      };
+      if (data.isPremium === true && data.token) {
+        // Success! Save token and unlock
+        saveToken(data.token);
+        localStorage.setItem("et_email", data.email || cleanEmail);
+        
+        setResult({
+          email: data.email || cleanEmail,
+          status: data.status || "active",
+          plan: data.plan || "Premium",
+          isPremium: true,
+        });
 
-      setResult(cleaned);
-      localStorage.setItem("et_email", cleaned.email);
+        // Unlock app after brief delay to show success message
+        setTimeout(() => {
+          setIsPremium(true);
+        }, 1500);
+      } else {
+        // Not found or inactive
+        throw new Error(data.message || "Email not found. Please check your email or purchase a subscription.");
+      }
     } catch (e) {
-      setError(e?.message || "Something went wrong.");
+      setError(e?.message || "Something went wrong. Please try again.");
       setResult(null);
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   }
 
+  // ============================================================================
+  // RESET ACCESS (clear auth and try different email)
+  // ============================================================================
   function resetAccess() {
-    localStorage.removeItem("et_email");
+    clearAuth();
     setEmail("");
     setResult(null);
     setError("");
+    setIsPremium(false);
   }
 
-  const isPremium = result?.isPremium === true;
+  // ============================================================================
+  // AUTO-UNLOCK ON APP LOAD
+  // ============================================================================
+  useEffect(() => {
+    const deviceId = getDeviceId();
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
 
+    // Priority 1: Check if Stripe redirected with session_id (post-purchase)
+    if (sessionId) {
+      claimDeviceBySession(sessionId);
+      return;
+    }
+
+    // Priority 2: Check if we have an existing token
+    const token = getStoredToken();
+    if (token) {
+      validateToken(token, deviceId);
+    } else {
+      // No session, no token - show paywall
+      setBootLoading(false);
+    }
+  }, []);
+
+  // ============================================================================
+  // STYLES (unchanged from your original)
+  // ============================================================================
   const styles = {
     page: {
       minHeight: "100vh",
@@ -95,7 +269,6 @@ export default function PremiumGate({ children }) {
       pointerEvents: "none",
       animation: "pulse 8s ease-in-out infinite",
     },
-
     watermark: {
       position: "absolute",
       left: "50%",
@@ -107,7 +280,6 @@ export default function PremiumGate({ children }) {
       pointerEvents: "none",
       zIndex: 0,
     },
-
     header: { textAlign: "center", position: "relative", zIndex: 2 },
     title: {
       fontSize: "4.5rem",
@@ -132,20 +304,20 @@ export default function PremiumGate({ children }) {
       fontSize: "1.1rem",
       boxShadow: "0 6px 16px rgba(251, 191, 36, 0.20)",
     },
-mascotSection: {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  gap: "1.5rem",
-  marginTop: "2rem",
-  padding: "1.75rem",
-  background: "rgba(255, 255, 255, 0.08)",
-  borderRadius: "1.25rem",
-  border: "1px solid rgba(255, 255, 255, 0.16)",
-  position: "relative",
-  zIndex: 2,
-  flexWrap: "wrap",
-},
+    mascotSection: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "1.5rem",
+      marginTop: "2rem",
+      padding: "1.75rem",
+      background: "rgba(255, 255, 255, 0.08)",
+      borderRadius: "1.25rem",
+      border: "1px solid rgba(255, 255, 255, 0.16)",
+      position: "relative",
+      zIndex: 2,
+      flexWrap: "wrap",
+    },
     mascot: {
       width: "120px",
       height: "auto",
@@ -161,12 +333,12 @@ mascotSection: {
       textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
     },
     quoteSubtext: {
-  color: "rgba(255, 255, 255, 0.94)",
-  fontSize: "1rem",
-  lineHeight: 1.65,
-  wordWrap: "break-word",
-  overflowWrap: "break-word",
-},
+      color: "rgba(255, 255, 255, 0.94)",
+      fontSize: "1rem",
+      lineHeight: 1.65,
+      wordWrap: "break-word",
+      overflowWrap: "break-word",
+    },
     sectionTitle: {
       marginTop: "2.25rem",
       color: "#fbbf24",
@@ -185,7 +357,6 @@ mascotSection: {
       position: "relative",
       zIndex: 2,
     },
-
     featuresList: {
       marginTop: "1.25rem",
       display: "grid",
@@ -220,56 +391,6 @@ mascotSection: {
       fontSize: "1rem",
       lineHeight: 1.5,
     },
-
-    budtenderSample: {
-      marginTop: "1rem",
-      display: "inline-block",
-      padding: "1.25rem 1.5rem",
-      borderRadius: "1rem",
-      background: "rgba(251, 191, 36, 0.15)",
-      border: "2px solid #fbbf24",
-      boxShadow: "0 12px 28px rgba(0,0,0,0.4), 0 0 20px rgba(251, 191, 36, 0.15)",
-      color: "rgba(255,255,255,0.95)",
-    },
-    budHeader: {
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
-      gap: "1rem",
-      marginBottom: "0.75rem",
-    },
-    budTitle: { 
-      fontWeight: 900, 
-      fontSize: "1.1rem",
-      color: "#fbbf24",
-      textShadow: "0 2px 6px rgba(251, 191, 36, 0.4)",
-    },
-    budPill: {
-      fontSize: "0.8rem",
-      fontWeight: 900,
-      padding: "0.35rem 0.75rem",
-      borderRadius: "999px",
-      background: "rgba(251, 191, 36, 0.20)",
-      border: "1px solid #fbbf24",
-      color: "#fbbf24",
-      boxShadow: "0 2px 6px rgba(251, 191, 36, 0.15)",
-    },
-    budRow: { 
-      display: "flex", 
-      gap: "0.6rem", 
-      flexWrap: "wrap", 
-      marginTop: "0.75rem" 
-    },
-    budTag: {
-      fontSize: "0.85rem",
-      padding: "0.35rem 0.75rem",
-      borderRadius: "999px",
-      background: "rgba(255,255,255,0.12)",
-      border: "1px solid rgba(255,255,255,0.20)",
-      color: "rgba(255,255,255,0.95)",
-      fontWeight: 800,
-    },
-
     pricingSection: {
       marginTop: "2.5rem",
       textAlign: "center",
@@ -299,7 +420,6 @@ mascotSection: {
       fontSize: "1.2rem", 
       fontWeight: 700 
     },
-
     buyButton: {
       marginTop: "1.5rem",
       width: "100%",
@@ -320,7 +440,6 @@ mascotSection: {
       position: "relative",
       overflow: "hidden",
     },
-
     divider: {
       marginTop: "2.5rem",
       marginBottom: "2rem",
@@ -329,7 +448,6 @@ mascotSection: {
       position: "relative",
       zIndex: 2,
     },
-
     unlockSection: {
       background: "rgba(255, 255, 255, 0.07)",
       borderRadius: "1.25rem",
@@ -347,40 +465,38 @@ mascotSection: {
       textAlign: "center",
       textShadow: "0 2px 8px rgba(251, 191, 36, 0.4)",
     },
-
     inputRow: { 
-  display: "flex", 
-  flexDirection: "column",
-  gap: "0.85rem",
-  width: "100%"
-},
-   input: {
-  width: "100%",
-  padding: "1.1rem 1.4rem",
-  borderRadius: "1rem",
-  border: "2px solid rgba(251, 191, 36, 0.35)",
-  background: "rgba(255, 255, 255, 0.96)",
-  color: "#111827",
-  fontSize: "1.08rem",
-  fontWeight: 650,
-  outline: "none",
-  transition: "all 0.2s ease",
-  boxSizing: "border-box",
-},
+      display: "flex", 
+      flexDirection: "column",
+      gap: "0.85rem",
+      width: "100%"
+    },
+    input: {
+      width: "100%",
+      padding: "1.1rem 1.4rem",
+      borderRadius: "1rem",
+      border: "2px solid rgba(251, 191, 36, 0.35)",
+      background: "rgba(255, 255, 255, 0.96)",
+      color: "#111827",
+      fontSize: "1.08rem",
+      fontWeight: 650,
+      outline: "none",
+      transition: "all 0.2s ease",
+      boxSizing: "border-box",
+    },
     unlockButton: {
-  width: "100%",
-  padding: "1.1rem 2.25rem",
-  borderRadius: "1rem",
-  border: "2px solid #fbbf24",
-  background: "rgba(251, 191, 36, 0.20)",
-  color: "#fbbf24",
-  fontSize: "1.15rem",
-  fontWeight: 900,
-  cursor: "pointer",
-  transition: "all 0.2s ease",
-  boxShadow: "0 6px 16px rgba(251, 191, 36, 0.20)",
-},
-
+      width: "100%",
+      padding: "1.1rem 2.25rem",
+      borderRadius: "1rem",
+      border: "2px solid #fbbf24",
+      background: "rgba(251, 191, 36, 0.20)",
+      color: "#fbbf24",
+      fontSize: "1.15rem",
+      fontWeight: 900,
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+      boxShadow: "0 6px 16px rgba(251, 191, 36, 0.20)",
+    },
     error: {
       marginTop: "1.15rem",
       padding: "1.1rem",
@@ -434,7 +550,32 @@ mascotSection: {
     },
   };
 
+  // ============================================================================
+  // RENDER: Show loading while checking token on initial load
+  // ============================================================================
+  if (bootLoading && !result) {
+    return (
+      <div style={styles.page}>
+        <div style={{ ...styles.card, maxWidth: "400px", textAlign: "center" }}>
+          <h2 style={{ color: "#fbbf24", fontSize: "2rem", marginBottom: "1rem" }}>
+            ⏳ Checking access...
+          </h2>
+          <p style={{ color: "rgba(255,255,255,0.9)" }}>
+            Hold tight, we're verifying your premium status.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // RENDER: User is premium - show the app!
+  // ============================================================================
   if (isPremium) return <>{children}</>;
+
+  // ============================================================================
+  // RENDER: Paywall
+  // ============================================================================
 
   const features = [
     {
@@ -461,7 +602,6 @@ mascotSection: {
       icon: "🎴",
       title: "Beautiful Budtender Card",
       desc: "A clean, gold-styled reference card you can show when picking strains.",
-      showGoldCard: true,
     },
   ];
 
@@ -471,10 +611,6 @@ mascotSection: {
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: 0.85; transform: scale(1.02); }
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
         }
         button:hover {
           transform: translateY(-3px) !important;
@@ -527,18 +663,14 @@ mascotSection: {
             {features.map((f, i) => (
               <div key={i} className="feature-item" style={styles.featureItem}>
                 <div style={styles.featureIcon}>{f.icon}</div>
-
                 <div style={styles.featureTextWrap}>
                   <div style={styles.featureTitle}>{f.title}</div>
                   <div style={styles.featureDesc}>{f.desc}</div>
-
-                  
                 </div>
               </div>
             ))}
           </div>
 
-          {/* SOCIAL PROOF / BENEFITS */}
           <div
             style={{
               marginTop: "2.5rem",
@@ -601,12 +733,13 @@ mascotSection: {
             </div>
 
             <div style={{ color: "rgba(255, 255, 255, 0.87)", marginBottom: "0.65rem", fontSize: "1.05rem" }}>
-              "Stripe" • Cancel anytime
+              Secure via Stripe • Cancel anytime
             </div>
 
             <button
               style={styles.buyButton}
-              onClick={() => window.open(STRIPE_URL, "_blank")}              onMouseEnter={(e) => {
+              onClick={() => window.location.href = STRIPE_URL}
+              onMouseEnter={(e) => {
                 e.currentTarget.style.transform = "translateY(-4px)";
                 e.currentTarget.style.boxShadow = 
                   "0 0 50px rgba(251, 191, 36, 0.65), 0 15px 55px rgba(0, 0, 0, 0.50)";
@@ -619,26 +752,148 @@ mascotSection: {
             >
               🔓 Unlock Eazy Terp Now
             </button>
+
+            <div style={{ 
+              marginTop: "1rem", 
+              fontSize: "0.9rem", 
+              color: "rgba(255,255,255,0.7)",
+              fontStyle: "italic"
+            }}>
+              🔐 One-device premium access • Switch phones anytime via Restore Access
+            </div>
           </div>
 
           <div style={styles.divider} />
 
+          {/* VIDEO DEMO SECTION */}
+          <div
+            style={{
+              marginTop: "3rem",
+              marginBottom: "3rem",
+              padding: "2.5rem 2rem",
+              borderRadius: "1.5rem",
+              background: "linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%)",
+              border: "3px solid #fbbf24",
+              boxShadow: "0 10px 40px rgba(251, 191, 36, 0.3)",
+            }}
+          >
+            <div style={{ textAlign: "center", marginBottom: "2rem" }}>
+              <h2
+                style={{
+                  fontSize: "2rem",
+                  fontWeight: 900,
+                  color: "#fbbf24",
+                  margin: "0 0 0.5rem 0",
+                  textShadow: "0 2px 10px rgba(251, 191, 36, 0.5)",
+                }}
+              >
+                🎬 See It In Action
+              </h2>
+              <p
+                style={{
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fontSize: "1.1rem",
+                  margin: 0,
+                }}
+              >
+                Watch how Eazy Terp matches your mood to the perfect terpene in seconds
+              </p>
+            </div>
+
+            <div
+              style={{
+                maxWidth: "600px",
+                margin: "0 auto",
+                borderRadius: "1rem",
+                overflow: "hidden",
+                boxShadow: "0 8px 30px rgba(0, 0, 0, 0.4)",
+                border: "2px solid rgba(251, 191, 36, 0.3)",
+              }}
+            >
+              <video
+                controls
+                preload="metadata"
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
+                  backgroundColor: "#000",
+                }}
+                poster="/eazy-terp-full.png"
+                onEnded={(e) => {
+                  e.target.load(); // Resets video to show poster
+                }}
+                onError={(e) => {
+                  console.error("Video failed to load:", e);
+                  e.target.style.display = "none";
+                  e.target.nextSibling.style.display = "block";
+                }}
+              >
+                <source src="/demo-video.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              <div
+                style={{
+                  display: "none",
+                  padding: "2rem",
+                  textAlign: "center",
+                  backgroundColor: "rgba(251, 191, 36, 0.1)",
+                  color: "#fbbf24",
+                }}
+              >
+                <p style={{ margin: 0, fontSize: "1.1rem" }}>
+                  Video not found. Please add <code>demo-video.mp4</code> to your <code>/public</code> folder.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                marginTop: "2rem",
+                textAlign: "center",
+                padding: "1.5rem",
+                borderRadius: "1rem",
+                background: "rgba(251, 191, 36, 0.15)",
+              }}
+            >
+              <p
+                style={{
+                  color: "#fbbf24",
+                  fontSize: "1.2rem",
+                  fontWeight: 800,
+                  margin: 0,
+                }}
+              >
+                ✨ Ready to match YOUR mood? Unlock full access below! ✨
+              </p>
+            </div>
+          </div>
+
           <div style={styles.unlockSection}>
-            <h2 style={styles.unlockTitle}>Already Subscribed? 🎉</h2>
+            <h2 style={styles.unlockTitle}>Restore Access 🔄</h2>
+
+            <div style={{ 
+              textAlign: "center", 
+              marginBottom: "1.5rem",
+              color: "rgba(255,255,255,0.85)",
+              fontSize: "1rem"
+            }}>
+              Got a new device? Enter your email to restore premium access here.
+            </div>
 
             <div style={styles.inputRow}>
               <input
                 style={styles.input}
-                placeholder="you@example.com"
+                placeholder="Enter your email from checkout"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && checkPremium(email)}
+                onKeyDown={(e) => e.key === "Enter" && claimDevice(email)}
                 autoComplete="email"
               />
               <button
                 style={styles.unlockButton}
-                onClick={() => checkPremium(email)}
-                disabled={loading}
+                onClick={() => claimDevice(email)}
+                disabled={actionLoading}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "rgba(251, 191, 36, 0.30)";
                   e.currentTarget.style.transform = "translateY(-2px)";
@@ -648,7 +903,7 @@ mascotSection: {
                   e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
-                {loading ? "⏳ Checking..." : "Unlock"}
+                {actionLoading ? "⏳ Claiming Device..." : "Restore Access"}
               </button>
             </div>
 
@@ -662,7 +917,7 @@ mascotSection: {
 
                 <div style={styles.resultStatus}>
                   {result.isPremium
-                    ? "✅ Premium Unlocked! Reloading app..."
+                    ? "✅ Access Restored! Unlocking app..."
                     : "❌ Not found — double-check your email"}
                 </div>
 
