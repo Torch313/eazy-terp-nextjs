@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     // Call your n8n validate-token webhook
     const n8nRes = await fetch(
-      "https://n8n.eazyterp.com/webhook/ee138a4f-f14a-452c-88b3-352753c40725",
+      "https://n8n.eazyterp.com/webhook/validate-token",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
